@@ -28,7 +28,7 @@ function PlanArt({ ram }: { ram: string }) {
       </div>
       <div className="flex items-center justify-between pt-2 pb-2.5">
         <Icon className="h-4 w-4" style={{ color }} aria-hidden />
-        <span className="text-[10px]" style={{ color }}>{num} GB · XAUUSD/M1</span>
+        <span className="text-[10px]" style={{ color }}>MT4 · MT5 · EA</span>
       </div>
     </div>
   );
