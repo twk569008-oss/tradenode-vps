@@ -29,11 +29,11 @@ export default async function HomePage() {
           <div>
             <span className="badge badge-accent mb-5">{t('Built for traders', 'مصمم للمتداولين')}</span>
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-              {t('Your Trading Runs. Your VPS Never Sleeps.', 'تداولك يعمل. الـ VPS لا ينام أبداً.')}
+              {t('Run Your Bots. Monitor Your Gold. We Keep the Lights On.', 'شغّل بوتاتك. راقب الذهب. نحن نحفظ التشغيل عنك.')}
             </h1>
             <p className="mt-5 text-lg text-[var(--text-2)] max-w-xl">
-              {t('Affordable virtual servers built for MetaTrader, Expert Advisors, and automated trading workflows.',
-                  'خوادم افتراضية بأسعار مناسبة، مصممة لمنصة ميتاتريدر والخبرات الآلية وسير عمل التداول الآلي.')}
+              {t('Forex and XAUUSD trading servers for MetaTrader 4/5, Expert Advisors and 24/7 bots — while your PC sleeps, your strategy does not.',
+                  'خوادم تداول للفوريكس والذهب XAUUSD لمنصة ميتاتريدر 4/5 والخبرات الآلية وبوتات تعمل ٢٤/٧ — بينما جهازك نائم، استراتيجيتك ليست كذلك.')}
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/plans" className="btn btn-primary">{t('Explore VPS Plans', 'استكشف خطط VPS')}</Link>
@@ -45,6 +45,9 @@ export default async function HomePage() {
           </div>
 
           {/* Server visual — static illustration, no fake live data */}
+          <div className="relative overflow-hidden rounded-2xl card mb-6" style={{ padding: 0 }}>
+            <img src="/hero-trading.svg" alt="" width={1200} height={600} className="w-full h-auto block" loading="eager" />
+          </div>
           <div className="card p-6 relative overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-px glow-line" />
             <div className="flex items-center justify-between mb-4">

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Cpu, MemoryStick, HardDrive, Check } from 'lucide-react';
+import { Cpu, MemoryStick, HardDrive, Check, Zap, Rocket, Star } from 'lucide-react';
 
 type Plan = {
   id: string; slug: string; name_en: string; name_ar: string; tagline_en: string | null; tagline_ar: string | null;
@@ -11,6 +11,28 @@ type Plan = {
   capacity_title_en: string | null; capacity_title_ar: string | null; best_for_en: string | null; best_for_ar: string | null;
   is_active: number; is_soldout: number; featured: number;
 };
+
+/** Simple per-plan illustrated header (no fabricated data — decorative only). */
+function PlanArt({ ram }: { ram: string }) {
+  const num = parseInt(ram, 10) || 4;
+  const bars = Math.min(Math.max(Math.round(num / 2), 2), 8);
+  const hot = num >= 12;
+  const Icon = hot ? Rocket : num >= 8 ? Star : Zap;
+  const color = hot ? '#d9962e' : num >= 8 ? '#f5c451' : 'var(--accent-2)';
+  return (
+    <div className="rounded-xl mb-5 px-4 pt-3" style={{ background: 'var(--bg-2)', border: '1px solid var(--stroke-1)' }} aria-hidden>
+      <div className="flex items-end gap-1.5 h-14">
+        {Array.from({ length: bars }).map((_, i) => (
+          <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${30 + ((i * 37) % 65)}%`, background: i % 3 === 2 ? '#e05260' : 'var(--accent)', opacity: 0.85 }} />
+        ))}
+      </div>
+      <div className="flex items-center justify-between pt-2 pb-2.5">
+        <Icon className="h-4 w-4" style={{ color }} aria-hidden />
+        <span className="text-[10px]" style={{ color }}>{num} GB · XAUUSD/M1</span>
+      </div>
+    </div>
+  );
+}
 
 const PERIODS = [
   { key: 'monthly', months: 1, disc: 0 },
@@ -65,6 +87,7 @@ export function PlansGrid({ plans, locale }: { plans: Plan[]; locale: 'en' | 'ar
               {p.featured ? (
                 <span className="badge badge-accent absolute top-4 end-4">{t('Popular', 'الأكثر طلباً')}</span>
               ) : null}
+              <PlanArt ram={String(p.ram)} />
               <h3 className="text-lg font-bold">{name}</h3>
               {tagline ? <p className="text-xs text-muted mt-1 mb-4">{tagline}</p> : <div className="mb-4" />}
 

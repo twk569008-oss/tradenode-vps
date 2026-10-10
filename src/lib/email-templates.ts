@@ -4,6 +4,11 @@
  */
 
 const BRAND_BG = '#0c1322';
+/** Visual banner shown atop every branded email. Points at the live site's
+ * public hero illustration; harmless if blocked (email renders text-only). */
+const BANNER_URL = process.env.APP_BASE_URL
+  ? `${process.env.APP_BASE_URL.replace(/\/$/, '')}/hero-trading.svg`
+  : 'https://tradenode-vps-production.up.railway.app/hero-trading.svg';
 const CARD_BG = '#111b30';
 const STROKE = '#24395a';
 const ACCENT = '#4c8dff';
@@ -38,7 +43,12 @@ function wrap(opts: { title: string; bodyHtml: string; lang: 'en' | 'ar'; footer
     </tr></table>
   </td></tr>
   <!-- Card -->
-  <tr><td style="background:${CARD_BG};border:1px solid ${STROKE};border-radius:16px;padding:36px 32px;">
+  <tr><td style="background:${CARD_BG};border:1px solid ${STROKE};border-radius:16px;overflow:hidden;">
+    <div style="height:6px;background:linear-gradient(90deg,${ACCENT},#26a869,${ACCENT});font-size:0;line-height:0;">&nbsp;</div>
+    <div style="padding:0 32px 0 32px;">
+      <img src="${BANNER_URL}" alt="" width="536" height="180" style="display:block;width:100%;max-width:536px;height:auto;border:none;outline:none;text-decoration:none;margin:0;padding:26px 0 0 0;"/>
+    </div>
+    <div style="padding:22px 32px 36px 32px;">
     <div style="text-align:${align};">
       ${opts.bodyHtml}
     </div>

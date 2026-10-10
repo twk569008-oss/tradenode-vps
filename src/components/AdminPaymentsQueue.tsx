@@ -37,7 +37,14 @@ export function AdminPaymentsQueue() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Payment review queue</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">Payment review queue</h1>
+        {subs != null && (
+          <span className="badge badge-accent text-xs">
+            {subs.length} submission{subs.length === 1 ? '' : 's'} · {new Date().toLocaleDateString()}
+          </span>
+        )}
+      </div>
       <div className="flex gap-2">
         {(['pending', 'approved', 'rejected', 'all'] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)} className="btn btn-secondary text-xs"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, AlertCircle, CheckCircle2, AtSign, Eye, EyeOff } from 'lucide-react';
 
@@ -9,6 +9,8 @@ const USERNAME_RE = /^[\w.-]{3,32}$/;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const search = useSearchParams();
+  const next = search.get('next') || '';
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -73,7 +75,7 @@ export default function RegisterPage() {
         body: JSON.stringify({ name: username.trim(), email: email.trim(), password, locale: 'en' }),
       });
       const d = await res.json().catch(() => ({}) as { code?: string; error?: string });
-      if (res.ok) { router.push('/dashboard'); router.refresh(); return; }
+      if (res.ok) { router.push(next && next.startsWith('/') ? next : '/dashboard'); router.refresh(); return; }
       if (d.code === 'email_in_use' || d.error === 'email_in_use') {
         setEmailMsg({ ok: false, text: 'This email is already registered — log in instead.', suggestion: true });
         return;

@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:51649';
+const BASE = process.env.E2E_BASE || 'http://localhost:55586';
 
 async function j(method, path, opts = {}, cookie) {
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };

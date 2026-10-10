@@ -60,6 +60,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ orderId: s
   const now = new Date().toISOString();
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
   const PERIOD_MONTHS: Record<string, number> = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
+  const periodMonthsOf = (label: string): number => {
+    const m = label.match(/^custom_(\d+)m$/);
+    if (m) { const n = parseInt(m[1], 10); return n >= 2 && n <= 36 ? n : 1; }
+    return PERIOD_MONTHS[label] ?? 1;
+  };
 
   switch (action) {
     case 'approve_payment': {
@@ -78,7 +83,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ orderId: s
       const vpsId = newId('vps');
       await db.query(`INSERT INTO vps_instances (id, order_id, status) VALUES ($1, $2, 'pending') ON CONFLICT (order_id) DO NOTHING`, [vpsId, orderId]);
       const start = now;
-      const months = PERIOD_MONTHS[String(order.billing_period)] ?? 1;
+      const months = periodMonthsOf(String(order.billing_period));
       const end = new Date(new Date(start).setMonth(new Date(start).getMonth() + months)).toISOString();
       const vpsRow = await db.query('SELECT id FROM vps_instances WHERE order_id = $1', [orderId]);
       const realVpsId = (vpsRow.rows[0] as { id: string }).id;

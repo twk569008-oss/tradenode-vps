@@ -12,6 +12,7 @@ type Plan = {
 
 const PERIODS = [
   { key: 'monthly', months: 1, en: 'Monthly', ar: 'شهري' },
+  { key: 'custom', months: 0, en: 'Custom months', ar: 'مدة مخصصة' },
   { key: 'quarterly', months: 3, en: 'Quarterly', ar: 'ربع سنوي' },
   { key: 'semiannual', months: 6, en: 'Semiannual', ar: 'نصف سنوي' },
   { key: 'annual', months: 12, en: 'Annual', ar: 'سنوي' },
@@ -23,20 +24,27 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
   const router = useRouter();
 
   const allowed = plan.billing_periods.split(',').map((s) => s.trim());
-  const visiblePeriods = PERIODS.filter((p) => allowed.includes(p.key));
+  const visiblePeriods: Array<{ key: string; months: number; en: string; ar: string }> = [
+    ...PERIODS.filter((p) => p.key !== 'custom' && allowed.includes(p.key)),
+    { key: 'custom', months: 0, en: 'Custom months', ar: 'مدة مخصصة' },
+  ];
 
   const [period, setPeriod] = useState<string>(visiblePeriods[0]?.key ?? 'monthly');
+  const [customMonths, setCustomMonths] = useState<number>(4);
   const [coupon, setCoupon] = useState('');
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const chosen = visiblePeriods.find((x) => x.key === period) ?? visiblePeriods[0];
+  const effectiveMonths = period === 'custom' ? customMonths : (chosen?.months ?? 1);
   const discRate =
-    period === 'quarterly' ? (plan.billing_discount_quarterly ?? 0) :
-    period === 'semiannual' ? (plan.billing_discount_semiannual ?? 0) :
-    period === 'annual' ? (plan.billing_discount_annual ?? 0) : 0;
+    period === 'custom'
+      ? (customMonths >= 12 ? (plan.billing_discount_annual ?? 0) : customMonths >= 6 ? (plan.billing_discount_semiannual ?? 0) : customMonths >= 3 ? (plan.billing_discount_quarterly ?? 0) : 0)
+      : period === 'quarterly' ? (plan.billing_discount_quarterly ?? 0) :
+      period === 'semiannual' ? (plan.billing_discount_semiannual ?? 0) :
+      period === 'annual' ? (plan.billing_discount_annual ?? 0) : 0;
 
-  const base = plan.monthly_price * (chosen?.months ?? 1);
+  const base = plan.monthly_price * effectiveMonths;
   const total = base * (1 - discRate);
 
   async function submit() {
@@ -45,7 +53,7 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: plan.id, period, couponCode: coupon.trim() || null }),
+        body: JSON.stringify({ planId: plan.id, period, months: period === 'custom' ? customMonths : null, couponCode: coupon.trim() || null }),
       });
       const data = await res.json().catch(() => ({}) as { orderNumber?: string; error?: string });
       if (res.ok && data.orderNumber) {
@@ -88,7 +96,7 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
         </div>
 
         <label className="label mb-3">{t('Billing period', 'فترة الفوترة')}</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           {visiblePeriods.map((x) => (
             <button key={x.key} type="button" onClick={() => setPeriod(x.key)}
               aria-pressed={period === x.key}
@@ -100,6 +108,21 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
             </button>
           ))}
         </div>
+        {period === 'custom' && (
+          <div className="mb-6 flex items-center gap-3 flex-wrap">
+            <label className="text-sm text-muted" htmlFor="customMonths">{t('Duration (months, 2–36):', 'المدة بالأشهر (٢–٣٦):')}</label>
+            <input id="customMonths" type="number" min={2} max={36} step={1}
+              className="input !w-24 text-center" value={customMonths}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (!Number.isNaN(n)) setCustomMonths(Math.min(36, Math.max(2, n)));
+              }} dir="ltr" />
+            <span className="text-xs text-muted">{customMonths >= 12
+              ? t('Annual discount applied', 'خصم سنوي مطبق')
+              : customMonths >= 6 ? t('Semiannual discount applied', 'خصم نصف سنوي مطبق')
+              : customMonths >= 3 ? t('Quarterly discount applied', 'خصم ربع سنوي مطبق') : ''}</span>
+          </div>
+        )}
 
         <label className="label mb-2" htmlFor="coupon">{t('Coupon (optional)', 'قسيمة (اختياري)')}</label>
         <div className="relative mb-6">
@@ -119,13 +142,20 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
             <span>{t('Total (USD)', 'الإجمالي (USD)')}</span>
             <span>${total.toFixed(2)}</span>
           </div>
-          {chosen && chosen.months > 1 && (
-            <p className="text-xs text-muted pt-1">{t(`Billed every ${chosen.months} months`, `تُحاسب كل ${chosen.months} أشهر`)}</p>
+          {effectiveMonths > 1 && (
+            <p className="text-xs text-muted pt-1">{t(`Billed every ${effectiveMonths} months`, `تُحاسب كل ${effectiveMonths} أشهر`)}</p>
           )}
         </div>
 
         {!loggedIn && (
-          <p className="text-xs badge badge-amber mt-4">{t('You must be logged in to create an order.', 'يجب تسجيل الدخول لإنشاء طلب.')}</p>
+          <div className="mt-4 rounded-xl p-4 text-sm" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
+            <p className="font-semibold mb-1">{t('Almost there — one quick step', 'خطوة واحدة بسيطة ويصبح طلبك جاهزاً')}</p>
+            <p className="text-muted text-xs mb-3">{t('Create an account (or log in) to continue to payment — your plan selection is saved.', 'أنشئ حساباً (أو سجّل دخولك) للمتابعة إلى الدفع — اختيار الخطة محفوظ لدينا.')}</p>
+            <div className="flex gap-2 flex-wrap">
+              <a href={`/login?next=/checkout/${plan.slug}`} className="btn btn-primary !py-2 !px-4 text-xs">{t('Log in', 'تسجيل الدخول')}</a>
+              <a href={`/register?next=/checkout/${plan.slug}`} className="btn btn-secondary !py-2 !px-4 text-xs">{t('Create account', 'إنشاء حساب')}</a>
+            </div>
+          </div>
         )}
 
         <button onClick={submit} disabled={busy || !loggedIn} className="btn btn-primary w-full justify-center mt-6">

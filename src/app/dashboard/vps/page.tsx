@@ -62,11 +62,27 @@ export default async function CustomerVpsPage() {
             </div>
           </div>
 
-          {/* Timeline row: start / expiry */}
+          {/* Timeline row: start / expiry + renewal banner */}
           <div className="grid sm:grid-cols-2 gap-3 text-sm mb-4">
             {v.sent_at ? <div className="flex justify-between rounded-lg p-3" style={{ background: 'var(--bg-2)' }}><span className="text-muted">{t('Delivered', 'تاريخ التسليم')}</span><span className="text-xs">{new Date(v.sent_at as string).toLocaleDateString()}</span></div> : null}
             {v.expiration_date ? <div className="flex justify-between rounded-lg p-3" style={{ background: 'var(--bg-2)' }}><span className="text-muted">{t('Expires', 'ينتهي')}</span><span className="text-xs font-semibold">{new Date(v.expiration_date as string).toLocaleDateString()}</span></div> : null}
           </div>
+          {(() => {
+            const exp = v.expiration_date ? new Date(v.expiration_date as string).getTime() : 0;
+            const daysLeft = exp ? Math.ceil((exp - Date.now()) / 86400_000) : null;
+            if (daysLeft === null || daysLeft > 7) return null;
+            return (
+              <div className="mb-4 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
+                <div className="text-sm">
+                  <b>{daysLeft <= 0
+                    ? t('Your server has expired. Place a renewal order to keep it running.', 'انتهت مدة خادمك. أنشئ طلب تجديد لإبقائه يعمل.')
+                    : t(`Your server expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`, `ينتهي خادمك بعد ${daysLeft} يوم.`)}</b>
+                  <p className="text-xs text-muted mt-1">{t('Renew by ordering the same plan again — provisioning keeps your existing server.', 'جدد بطلب نفس الخطة مرة أخرى — يبقى خادمك الحالي كما هو.')}</p>
+                </div>
+                <a href="/plans" className="btn btn-primary !py-2 !px-4 text-xs shrink-0">{t('Renew / extend now', 'تجديد / تمديد الآن')}</a>
+              </div>
+            );
+          })()}
 
           {v.setup_instructions ? (
             <div className="rounded-lg p-4 mb-3" style={{ background: 'var(--bg-2)' }}>

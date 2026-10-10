@@ -29,6 +29,25 @@ export function isPeriodAllowed(p: string, periodsCsv: string): boolean {
 }
 
 /**
+ * Custom-duration billing: user picks any number of whole months (2–36).
+ * Discount tiers mirror the standard periods (often the same for quarterly /
+ * semiannual / annual, else 0) so custom lengths stay predictable.
+ */
+export function customMonthsValid(m: unknown): m is number {
+  return typeof m === 'number' && Number.isInteger(m) && m >= 2 && m <= 36;
+}
+
+export function discountRateForMonths(
+  months: number,
+  rates: { quarterly?: number; semiannual?: number; annual?: number }
+): number {
+  if (months >= 12) return rates.annual ?? 0;
+  if (months >= 6) return rates.semiannual ?? 0;
+  if (months >= 3) return rates.quarterly ?? 0;
+  return 0;
+}
+
+/**
  * Returns the *total* upfront price for the given period, applying
  * admin-configured discounts. Never rounds to "nice" numbers — exact math.
  */
@@ -69,6 +88,46 @@ export function calculateOrderTotal(opts: {
 
   const total = Math.max(afterDiscount - coupon, 0);
   return { period, months, base, discount, coupon, total: fromCents(total) };
+}
+
+/**
+ * Custom-months variant of calculateOrderTotal. Same math, but the period is
+ * just "monthly repeated N times" and the discount tier is derived from N.
+ */
+export function calculateCustomTotal(opts: {
+  monthlyPrice: number;
+  months: number;
+  discountQuarterly?: number;
+  discountSemiannual?: number;
+  discountAnnual?: number;
+  couponPercent?: number;
+  couponFixed?: number;
+}): { period: 'custom'; months: number; base: number; discount: number; coupon: number; total: number } | { error: string } {
+  if (!customMonthsValid(opts.months)) return { error: 'invalid_months' };
+  if (!Number.isFinite(opts.monthlyPrice) || opts.monthlyPrice < 0) return { error: 'invalid_base_price' };
+
+  const base = toCents(opts.monthlyPrice) * opts.months;
+  const discountRate = discountRateForMonths(opts.months, {
+    quarterly: opts.discountQuarterly,
+    semiannual: opts.discountSemiannual,
+    annual: opts.discountAnnual,
+  });
+  if (discountRate < 0 || discountRate > 0.9) return { error: 'invalid_discount' };
+
+  const discount = Math.round(base * discountRate);
+  const afterDiscount = base - discount;
+
+  let coupon = 0;
+  if (opts.couponPercent && opts.couponPercent > 0) {
+    coupon += Math.round(afterDiscount * (opts.couponPercent / 100));
+  }
+  if (opts.couponFixed && opts.couponFixed > 0) {
+    coupon += toCents(opts.couponFixed);
+  }
+  coupon = Math.min(coupon, afterDiscount);
+
+  const total = Math.max(afterDiscount - coupon, 0);
+  return { period: 'custom', months: opts.months, base, discount, coupon, total: fromCents(total) };
 }
 
 export function formatUsd(v: number): string {
