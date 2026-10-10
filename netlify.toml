@@ -1,0 +1,21 @@
+# TradeNode VPS — Netlify build configuration (Postgres/Supabase mode)
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Required so Netlify recognizes Next.js SSR / API routes / middleware
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[dev]
+  framework = "#auto"
+  targetPort = 3000
+
+# Environment variables to ADD in the Netlify dashboard
+# (Site configuration → Environment variables):
+#   DATABASE_URL              → Supabase pooler connection string
+#   CREDENTIAL_ENCRYPTION_KEY → your local value
+#   CRON_SECRET               → your local value
+#   APP_BASE_URL              → https://<your-site>.netlify.app
+#   (optional) SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM
