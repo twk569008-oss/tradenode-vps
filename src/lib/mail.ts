@@ -19,7 +19,7 @@ export async function processQueuedEmails(limit = 20): Promise<{ sent: number; f
 
   let transport: { sendMail(opts: Record<string, unknown>): Promise<unknown> } | null = null;
   try {
-    const mod: any = await eval('import("nodemailer")');
+    const mod = (await eval('import("nodemailer")')) as { createTransport(opts: Record<string, unknown>): { sendMail(opts: Record<string, unknown>): Promise<unknown> } | null };
     transport = mod.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT || 587),

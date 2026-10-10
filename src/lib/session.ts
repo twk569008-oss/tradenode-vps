@@ -1,4 +1,4 @@
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { SESSION_COOKIE, getUserBySessionToken, type SessionUser } from '@/lib/auth';
 
 export async function getCurrentUser(): Promise<SessionUser | null> {

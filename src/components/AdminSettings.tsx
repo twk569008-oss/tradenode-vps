@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Save, Plus, Power } from 'lucide-react';
+import { Save, Plus, Power } from 'lucide-react';
 
 type Net = { id: string; code: string; name_en: string; name_ar: string; network_chain: string; deposit_address: string; is_active: number; confirmations_required: number };
 type Coupon = { id: string; code: string; discount_type: string; discount_value: number; max_uses: number | null; used_count: number; expires_at: string | null; is_active: number };

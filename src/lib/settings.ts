@@ -1,6 +1,5 @@
 import { getDb } from '@/db/db';
 
-type Cache = Record<string, { value: string; at: number }>;
 const cache = new Map<string, { value: string; at: number }>();
 const TTL = 30_000;
 

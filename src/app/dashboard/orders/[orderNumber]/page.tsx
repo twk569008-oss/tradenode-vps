@@ -86,7 +86,7 @@ export default async function CustomerOrderDetail({ params }: { params: Promise<
             </div>
             <div className="flex flex-wrap gap-2 mt-4">
               <a href={`/payment/${orderNumber}/proof`} className="btn btn-primary text-xs">{t('Re-upload payment proof', 'أعد رفع إثبات الدفع')}</a>
-              <a href="/dashboard/tickets" className="btn btn-secondary text-xs">{t('Open a support ticket', 'افتح تذكرة دعم')}</a>
+              <Link href="/dashboard/tickets" className="btn btn-secondary text-xs">{t('Open a support ticket', 'افتح تذكرة دعم')}</Link>
               <Link href="/plans" className="btn btn-secondary text-xs">{t('Browse other plans', 'تصفح خططاً أخرى')}</Link>
             </div>
           </div>

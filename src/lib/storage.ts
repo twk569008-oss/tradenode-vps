@@ -12,13 +12,13 @@ const SUPABASE_URL = () => process.env.SUPABASE_URL || (process.env.DATABASE_URL
 const SUPABASE_KEY = () => process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const BUCKET = () => process.env.SUPABASE_UPLOAD_BUCKET || 'tradenode-uploads';
 
-export function useSupabaseStorage(): boolean {
+export function isSupabaseStorage(): boolean {
   return Boolean(SUPABASE_URL() && SUPABASE_KEY());
 }
 
 /** Persist a validated buffer. Returns the storage key to save in the DB. */
 export async function putObject(buf: Buffer, mime: string, keyBase: string): Promise<StoredObject> {
-  if (useSupabaseStorage()) {
+  if (isSupabaseStorage()) {
     const key = `${keyBase}.bin`;
     const url = `${SUPABASE_URL()}/storage/v1/object/${BUCKET()}/${key}`;
     const res = await fetch(url, {
@@ -51,7 +51,7 @@ export async function putObject(buf: Buffer, mime: string, keyBase: string): Pro
 export async function getObject(key: string): Promise<Buffer | null> {
   if (!/^[a-zA-Z0-9_-]+\.\w+$/.test(key)) return null;
 
-  if (useSupabaseStorage()) {
+  if (isSupabaseStorage()) {
     const url = `${SUPABASE_URL()}/storage/v1/object/${BUCKET()}/${key}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_KEY()}` } });
     if (!res.ok) return null;
@@ -70,7 +70,7 @@ export async function getObject(key: string): Promise<Buffer | null> {
 /** Delete an object (best-effort, used when removing credentials/proofs). */
 export async function deleteObject(key: string): Promise<void> {
   if (!/^[a-zA-Z0-9_-]+\.\w+$/.test(key)) return;
-  if (useSupabaseStorage()) {
+  if (isSupabaseStorage()) {
     const url = `${SUPABASE_URL()}/storage/v1/object/${BUCKET()}/${key}`;
     await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${SUPABASE_KEY()}` } }).catch(() => {});
     return;

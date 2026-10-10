@@ -41,7 +41,6 @@ export function OrderTimeline({ status, locale }: { status: string; locale: 'en'
       {STEPS.map((s, i) => {
         const done = i < current;
         const now = i === current;
-        const pending = i > current;
         return (
           <li key={s.key} className="flex gap-3">
             <div className="flex flex-col items-center">

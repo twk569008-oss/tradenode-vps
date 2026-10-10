@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const CSRF_EXEMPT = ['/_next', '/favicon', '/robots.txt', '/sitemap.xml', '/og.png'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
