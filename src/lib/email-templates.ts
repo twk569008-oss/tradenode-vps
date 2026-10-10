@@ -58,6 +58,7 @@ function wrap(opts: { title: string; bodyHtml: string; lang: 'en' | 'ar'; footer
 }
 
 function h1(text: string, _lang?: 'en' | 'ar'): string {
+  void _lang;
   return `<h1 style="margin:0 0 14px 0;font-size:24px;font-weight:800;color:${TEXT};line-height:1.3;">${text}</h1>`;
 }
 function p(text: string, lang?: 'en' | 'ar'): string {
