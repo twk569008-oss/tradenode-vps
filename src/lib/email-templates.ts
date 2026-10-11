@@ -97,36 +97,60 @@ function callout(text: string, color: string, lang: 'en' | 'ar'): string {
   </div>`;
 }
 
-// ── Welcome (account created) ─────────────────────────────
-export function welcomeEmail(name: string, email: string, lang: 'en' | 'ar'): string {
+// ── Welcome (account created) — premium forex-branded hero ─
+export function welcomeEmail(name: string, _email: string, lang: 'en' | 'ar'): string {
   const en = lang === 'en';
+  const base = process.env.APP_BASE_URL ?? 'https://tradenode-vps-production.up.railway.app';
   const body = `
-    <div style="text-align:center;margin-bottom:22px;">
-      <div style="display:inline-block;width:52px;height:52px;background:${ACCENT};border-radius:50%;line-height:52px;font-size:26px;">🎉</div>
+    <!-- Big forex hero banner -->
+    <div style="text-align:center;margin:0 0 8px 0;">
+      <img src="${base}/hero-trading.svg" alt="${en ? 'Live forex & gold trading on a dedicated VPS' : 'تداول الفوريكس والذهب على خادم مخصص'}" width="600" height="300" style="display:block;width:100%;max-width:536px;height:auto;border:none;outline:none;text-decoration:none;margin:0 auto;border-radius:14px;border:1px solid ${STROKE};"/>
     </div>
-    ${h1(en ? `Welcome aboard, ${name}!` : `أهلاً بك معنا، ${name}!`, lang)}
+    <div style="text-align:center;margin:12px 0 20px 0;">
+      <div style="display:inline-block;background:linear-gradient(90deg,${ACCENT},#26a869);border-radius:50px;padding:10px 26px;font-size:13px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">
+        ${en ? '⚡ YOUR TRADING DESK IS READY' : '⚡ مكتب تداولك جاهز'}
+      </div>
+    </div>
+    ${h1(en ? `Welcome to the trading floor, ${name}! 🏆` : `أهلاً بك في قاعة التداول، ${name}! 🏆`, lang)}
     ${p(en
-      ? `Your TradeNode VPS account has been created successfully. You are now part of a platform built exclusively for traders who need their MetaTrader terminals, Expert Advisors, and bots running around the clock.`
-      : `تم إنشاء حسابك في TradeNode VPS بنجاح. أنت الآن عضو في منصة مبنية خصيصاً للمتداولين الذين يحتاجون أطراف MetaTracker والخبرات الآلية والروبوتات تعمل على مدار الساعة.`, lang)}
-    ${infoBox([
-      [en ? 'Your login email' : 'بريد دخولك', email],
-      [en ? 'Account type' : 'نوع الحساب', en ? 'Customer' : 'عميل'],
-      [en ? 'Plans start at' : 'الخطط تبدأ من', en ? '$2 / month' : '$2 / شهر'],
-      [en ? 'Annual discount' : 'خصم سنوي', en ? 'up to 18%' : 'حتى 18%'],
-    ], lang)}
+      ? `Your TradeNode VPS account is <strong>live</strong>. From this moment, your MetaTrader terminals, Expert Advisors and gold scalping bots have a dedicated home — one that never closes its laptop lid, never loses internet, and never sleeps.`
+      : `حسابك في TradeNode VPS <strong>مفعل الآن</strong>. من هذه اللحظة، أطراف MetaTrader وخبراتك الآلية وروبوتات السكالبينج على الذهب أصبح لها بيت خاص — لا يُغلق أنبوبه، ولا يفقد الإنترنت، ولا ينام أبداً.`, lang)}
+    <!-- Stats-style highlight row -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+      <tr>
+        <td style="padding:6px;">
+          <div style="background:rgba(76,141,255,0.10);border:1px solid ${STROKE};border-radius:12px;padding:16px 10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;color:${ACCENT_2};">MT4 · MT5</div>
+            <div style="font-size:11px;color:${MUTED};margin-top:4px;">${en ? 'Full compatibility' : 'توافق كامل'}</div>
+          </div>
+        </td>
+        <td style="padding:6px;">
+          <div style="background:rgba(52,211,153,0.10);border:1px solid ${STROKE};border-radius:12px;padding:16px 10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;color:${GREEN};">24/7</div>
+            <div style="font-size:11px;color:${MUTED};margin-top:4px;">${en ? 'Always-on operation' : 'عمل بدون توقف'}</div>
+          </div>
+        </td>
+        <td style="padding:6px;">
+          <div style="background:rgba(251,191,36,0.10);border:1px solid ${STROKE};border-radius:12px;padding:16px 10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;color:${AMBER};">$2</div>
+            <div style="font-size:11px;color:${MUTED};margin-top:4px;">${en ? 'Entry plan / month' : 'خطة البداية شهرياً'}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    ${btn(`${base}/plans`, en ? '🚀  Start Trading on Your VPS →' : '🚀 ابدأ التداول على خادمك →')}
     ${p(en
-      ? 'Ready to keep your trading running while you sleep? Pick a plan, pay with your favourite cryptocurrency, and your VPS will be prepared and delivered to your dashboard.'
-      : 'جاهز لإبقاء تداولك يعمل أثناء نومك؟ اختر خطة، ادفع بعملتك الرقمية المفضلة، وسيجهَّز VPS الخاص بك ويُسلَّم إلى لوحتك.', lang)}
-    ${btn(`${process.env.APP_BASE_URL ?? 'http://localhost:3000'}/plans`, en ? 'Explore VPS Plans →' : 'استكشف خطط VPS →')}
+      ? 'Pick the plan that fits your terminal count, complete checkout in under two minutes, and your VPS shows up in your dashboard — hand-verified by a real person, not a bot.'
+      : 'اختر الخطة المناسبة لعدد أطرافك، أكمل الطلب في أقل من دقيقتين، وسيظهر خادمك في لوحتك — يتحقق منه شخص حقيقي لا روبوت.', lang)}
     ${callout(en
-      ? '💳 Payment tip: we accept USDT (TRC20 / ERC20), SOL, BNB, and BTC. Every payment is verified by a real human — we never mark an order as paid from a screenshot alone.'
-      : '💳 نصيحة الدفع: نقبل USDT (TRC20 / ERC20)، SOL، BNB، و BTC. كل دفعة يتحقق منها شخص حقيقي — لا نعتبر الطلب مدفوعاً بمجرد لقطة شاشة.', AMBER, lang)}
+      ? '🛡  Every order goes through human verification before your VPS is delivered — that is how we keep your funds and trading safe.'
+      : '🛡  كل طلب يمرّ بمراجعة بشرية قبل تسليم خادمك — هكذا نحافظ على أموالك وتداولك بأمان.', GREEN, lang)}
     ${p(en
-      ? 'Need help? Open a support ticket right from your dashboard — we usually respond within a business day.'
-      : 'تحتاج مساعدة؟ افتح تذكرة دعم من لوحتك مباشرة — نرد عادةً خلال يوم عمل.', lang)}
+      ? 'Need help choosing a plan or setting up your first terminal? Open a support ticket from your dashboard — a real person answers, usually within one business day.'
+      : 'تحتاج مساعدة في اختيار خطة أو إعداد أول طرف تداول؟ افتح تذكرة من لوحتك — يجيبك شخص حقيقي عادةً خلال يوم عمل.', lang)}
   `;
   return wrap({
-    title: en ? 'Welcome to TradeNode VPS' : 'أهلاً بك في TradeNode VPS',
+    title: en ? 'Welcome to the trading floor — TradeNode VPS' : 'أهلاً بك في قاعة التداول — TradeNode VPS',
     bodyHtml: body,
     lang,
     footerNote: en
