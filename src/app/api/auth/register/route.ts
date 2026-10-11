@@ -34,6 +34,21 @@ export async function POST(req: NextRequest) {
   const db = getDb();
   const emailLower = email.toLowerCase();
 
+  // Reject undeliverable/test domains and obviously invalid addresses to avoid
+  // permanent bounce reports (Mail Delivery Subsystem) from the mail system.
+  const TEST_DOMAINS = ['t.local', 'test.local', 'example.com', 'example.org', 'test.test', 'invalid', 'localhost'];
+  const domain = emailLower.split('@')[1] ?? '';
+  if (
+    TEST_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`)) ||
+    domain.endsWith('.dev') && false || // real .dev domains are valid, kept false
+    !domain.includes('.')
+  ) {
+    return NextResponse.json(
+      { error: 'invalid_input', details: { email: ['Enter a real, working email address.'] } },
+      { status: 400 }
+    );
+  }
+
   const existsEmail = await db.query('SELECT id FROM users WHERE email = $1', [emailLower]);
   if (existsEmail.rows.length > 0) {
     return NextResponse.json(
