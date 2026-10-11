@@ -76,8 +76,8 @@ export default function LoginPage() {
         <div>
           <label className="label" htmlFor="password">{t('Password', 'كلمة المرور')}</label>
           <div className="relative">
-            <input id="password" type={show ? 'text' : 'password'} className="input pe-10" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder={t('Your password', 'كلمة مرورك')} dir="ltr" />
-            <button type="button" onClick={() => setShow(!show)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted" aria-label={show ? t('Hide password', 'إخفاء كلمة المرور') : t('Show password', 'إظهار كلمة المرور')}>
+            <input id="password" type={show ? 'text' : 'password'} className="input pwd-input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder={t('Your password', 'كلمة مرورك')} dir="ltr" />
+            <button type="button" onClick={() => setShow(!show)} className="pwd-toggle" aria-label={show ? t('Hide password', 'إخفاء كلمة المرور') : t('Show password', 'إظهار كلمة المرور')}>
               {show ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
             </button>
           </div>

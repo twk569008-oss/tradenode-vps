@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/lib/session';
 import { pickLocale } from '@/lib/i18n';
 import { PasswordChange } from '@/components/PasswordChange';
+import { ReferralCard } from '@/components/ReferralCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,7 @@ export default async function SettingsPage() {
           <div className="flex justify-between rounded-lg p-3" style={{ background: 'var(--bg-2)' }}><span className="text-muted">{t('Member since', 'عضو منذ')}</span><span>{new Date(user!.created_at as string).toLocaleDateString()}</span></div>
         </div>
       </div>
+      <ReferralCard locale={locale} />
       <PasswordChange locale={locale} />
     </div>
   );

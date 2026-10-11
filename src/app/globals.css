@@ -168,6 +168,16 @@ button, [role='button'], select, label[for], summary, a.btn {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 textarea.input { min-height: 6rem; resize: vertical; }
+input.pwd-input { padding-inline-end: 2.6rem; }
+.pwd-toggle {
+  position: absolute;
+  /* Always visually SIT ON the END side of the input regardless of dir (input value is LTR) */
+  inset-inline-end: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+}
+[dir='rtl'] .pwd-toggle { inset-inline-end: auto; inset-inline-start: 0.75rem; }
 
 label.label {
   display: block;

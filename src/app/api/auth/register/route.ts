@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { getDb } from '@/db/db';
 import { hashPassword, newId, createSession, passwordMeetsPolicy, writeAudit, SESSION_COOKIE } from '@/lib/auth';
@@ -12,6 +13,7 @@ const schema = z.object({
   email: z.string().email('Invalid email').max(120),
   password: z.string().min(10, 'Use 10+ characters with uppercase, lowercase, number and symbol').max(128),
   locale: z.enum(['en', 'ar']).default('en'),
+  ref: z.string().trim().max(16).optional(), // referral code (TN-XXXXXX)
 });
 
 export async function POST(req: NextRequest) {
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'invalid_input', details: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
-  const { name, email, password, locale } = parsed.data;
+  const { name, email, password, locale, ref } = parsed.data;
   if (!passwordMeetsPolicy(password)) {
     return NextResponse.json({ error: 'weak_password', hint: 'Use 10+ characters incl. uppercase, lowercase, number and symbol.' }, { status: 400 });
   }
@@ -50,10 +52,27 @@ export async function POST(req: NextRequest) {
   const id = newId('usr');
   const now = new Date().toISOString();
   const hash = await hashPassword(password);
+
+  // Resolve referral code (case-insensitive, tolerate missing TN- prefix)
+  let referrerId: string | null = null;
+  const refCodeIn = ref ? ref.trim().toUpperCase().replace(/^TN-?/, '') : null;
+  if (refCodeIn) {
+    const r = await db.query(`SELECT id FROM users WHERE UPPER(SUBSTRING(referral_code, 3)) = $1 AND id <> $2 LIMIT 1`, [refCodeIn, id]);
+    if (r.rows.length > 0) referrerId = (r.rows[0] as { id: string }).id;
+  }
+  // Generate the new user's own unique referral code (TN + 6 hex chars)
+  let myCode = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = 'TN' + crypto.randomUUID().replace(/-/g, '').substring(0, 6).toUpperCase();
+    const dup = await db.query('SELECT 1 FROM users WHERE referral_code = $1', [candidate]);
+    if (dup.rows.length === 0) { myCode = candidate; break; }
+  }
+  
+  const referrerParam = referrerId ?? (refCodeIn ? '__INVALID__' : null);
   await db.query(
-    `INSERT INTO users (id, name, email, password_hash, locale, role, theme, is_active, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, 'customer', 'dark', true, $6, $7)`,
-    [id, name, emailLower, hash, locale, now, now]
+    `INSERT INTO users (id, name, email, password_hash, locale, role, theme, is_active, created_at, updated_at, referral_code, referred_by)
+     VALUES ($1, $2, $3, $4, $5, 'customer', 'dark', true, $6, $7, $8, $9)`,
+    [id, name, emailLower, hash, locale, now, now, myCode, referrerParam]
   );
 
   await writeAudit({ actorId: id, actorRole: 'customer', action: 'account_created', entityType: 'user', entityId: id, ip });

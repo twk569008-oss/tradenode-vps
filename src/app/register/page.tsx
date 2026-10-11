@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get('next') || '';
+  const ref = search.get('ref') || '';
 
   const [locale] = useState<'en' | 'ar'>(() => {
     if (typeof document !== 'undefined') {
@@ -100,7 +101,7 @@ export default function RegisterPage() {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: username.trim(), email: email.trim(), password, locale }),
+        body: JSON.stringify({ name: username.trim(), email: email.trim(), password, locale, ref: ref || undefined }),
       });
       const d = await res.json().catch(() => ({}) as { code?: string; error?: string });
       if (res.ok) { router.push(next && next.startsWith('/') ? next : '/dashboard'); router.refresh(); return; }
@@ -187,8 +188,8 @@ export default function RegisterPage() {
         <div>
           <label className="label" htmlFor="rpassword">{t('Password', 'كلمة المرور')}</label>
           <div className="relative">
-            <input id="rpassword" type={show ? 'text' : 'password'} className="input pe-10" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" placeholder={t('Strong password', 'كلمة مرور قوية')} dir="ltr" />
-            <button type="button" onClick={() => setShow(!show)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted" aria-label={show ? t('Hide password', 'إخفاء') : t('Show password', 'إظهار')}>
+            <input id="rpassword" type={show ? 'text' : 'password'} className="input pwd-input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" placeholder={t('Strong password', 'كلمة مرور قوية')} dir="ltr" />
+            <button type="button" onClick={() => setShow(!show)} className="pwd-toggle" aria-label={show ? t('Hide password', 'إخفاء') : t('Show password', 'إظهار')}>
               {show ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
             </button>
           </div>

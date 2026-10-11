@@ -103,6 +103,21 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ orderId: s
         toEmail: customer.email,
       });
 
+      // Referral commission: 20% of verified order value to the referring user.
+      const refRes = await db.query(`SELECT referred_by FROM users WHERE id = $1 AND referred_by IS NOT NULL`, [order.user_id]);
+      const refId = (refRes.rows[0] as { referred_by?: string } | undefined)?.referred_by;
+      if (refId) {
+        const amount = Number(order.price) * 0.20;
+        await db.query(
+          `INSERT INTO referral_earnings (id, earner_user_id, buyer_user_id, order_number, amount, created_at) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [newId('ref'), refId, order.user_id, order.order_number, amount, now]
+        );
+        await db.query(
+          `UPDATE users SET referral_balance = COALESCE(referral_balance, 0) + $1 WHERE id = $2`,
+          [amount, refId]
+        );
+      }
+
       await writeAudit({ actorId: user.id, actorRole: 'admin', action: 'payment_approved', entityType: 'order', entityId: orderId, details: { submissionId: sub.id }, ip });
       break;
     }

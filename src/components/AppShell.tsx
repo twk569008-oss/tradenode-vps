@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Menu, X, Globe } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { AccountMenu } from '@/components/AccountMenu';
 
 const NAV = [
   { href: '/plans', en: 'VPS Plans', ar: 'خطط VPS' },
@@ -17,6 +18,11 @@ const NAV = [
 export function AppShell({ locale, children }: { locale: 'en' | 'ar'; children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/me').then((r) => setAuthed(r.ok)).catch(() => setAuthed(false));
+  }, [pathname]);
 
   if (pathname.startsWith('/admin')) {
     // Admin has its own chrome.
@@ -51,7 +57,11 @@ export function AppShell({ locale, children }: { locale: 'en' | 'ar'; children: 
             <button onClick={switchLocale} className="btn btn-secondary !py-1.5 !px-3 text-xs" aria-label="Switch language">
               <Globe className="h-3.5 w-3.5" aria-hidden /> {locale === 'en' ? 'العربية' : 'English'}
             </button>
-            <Link href="/login" className="btn btn-secondary !py-1.5 !px-3 text-xs">{t('Login', 'دخول')}</Link>
+            {authed ? (
+              <AccountMenu locale={locale} authed={authed} />
+            ) : (
+              <Link href="/login" className="btn btn-secondary !py-1.5 !px-3 text-xs">{t('Login', 'دخول')}</Link>
+            )}
             <Link href="/plans" className="btn btn-primary !py-1.5 !px-3 text-xs">{t('Order Now', 'اطلب الآن')}</Link>
           </div>
 
@@ -70,7 +80,11 @@ export function AppShell({ locale, children }: { locale: 'en' | 'ar'; children: 
               <button onClick={switchLocale} className="btn btn-secondary flex-1 text-xs">
                 <Globe className="h-3.5 w-3.5" aria-hidden /> {locale === 'en' ? 'العربية' : 'English'}
               </button>
-              <Link href="/login" onClick={() => setOpen(false)} className="btn btn-secondary flex-1 text-xs">{t('Login', 'دخول')}</Link>
+              {authed ? (
+                <AccountMenu locale={locale} authed={authed} />
+              ) : (
+                <Link href="/login" onClick={() => setOpen(false)} className="btn btn-secondary flex-1 text-xs">{t('Login', 'دخول')}</Link>
+              )}
             </div>
           </div>
         )}
