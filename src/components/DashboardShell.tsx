@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, ShoppingBag, Server, ReceiptText, LifeBuoy, Settings, Bell, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Server, ReceiptText, LifeBuoy, Settings, Bell, LogOut, Menu, X, Wallet } from 'lucide-react';
 
 const NAV = [
   { href: '/dashboard', en: 'Overview', ar: 'نظرة عامة', icon: LayoutDashboard },
+  { href: '/dashboard/wallet', en: 'My Wallet', ar: 'محفظتي', icon: Wallet },
   { href: '/dashboard/orders', en: 'My Orders', ar: 'طلباتي', icon: ShoppingBag },
   { href: '/dashboard/vps', en: 'My VPS Servers', ar: 'خوادمي', icon: Server },
   { href: '/dashboard/payments', en: 'Payment History', ar: 'سجل المدفوعات', icon: ReceiptText },
@@ -50,7 +51,9 @@ export function DashboardShell({ locale, children }: { locale: 'en' | 'ar'; chil
             {NAV.map((n) => (
               <Link key={n.href} href={n.href} onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors"
-                style={pathname === n.href ? { background: 'var(--accent-soft)', color: 'var(--accent-2)', fontWeight: 600 } : { color: 'var(--text-2)' }}>
+                style={pathname === n.href || (n.href !== '/dashboard' && pathname.startsWith(n.href))
+                  ? { background: 'var(--accent-soft)', color: 'var(--accent-2)', fontWeight: 600 }
+                  : { color: 'var(--text-2)' }}>
                 <n.icon className="h-4 w-4" aria-hidden />
                 <span className="flex-1">{t(n.en, n.ar)}</span>
                 {n.href === '/dashboard/notifications' && unread > 0 && (

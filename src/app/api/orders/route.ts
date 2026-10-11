@@ -11,6 +11,7 @@ const schema = z.object({
   period: z.enum(['monthly', 'quarterly', 'semiannual', 'annual', 'custom']),
   months: z.number().int().optional().nullable(), // only for period = 'custom'
   couponCode: z.string().max(40).optional().nullable(),
+  payFromWallet: z.boolean().optional().default(false),
 });
 
 export async function POST(req: NextRequest) {
@@ -68,6 +69,36 @@ export async function POST(req: NextRequest) {
   const orderNumber = `TN-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
   const now = new Date().toISOString();
   const billingPeriodLabel = period === 'custom' ? `custom_${months}m` : normalizePeriod(period);
+
+  // Wallet payment: balance must cover the total. Deduct atomically and move
+  // the order straight to payment_approved (no crypto payment needed).
+  if (parsed.data.payFromWallet) {
+    const balRes = await db.query('SELECT COALESCE(wallet_balance, 0) AS balance FROM users WHERE id = $1', [user.id]);
+    const balance = Number((balRes.rows[0] as { balance: string })?.balance ?? 0);
+    if (balance < total.total) {
+      return NextResponse.json({ error: 'insufficient_balance', balance }, { status: 400 });
+    }
+    await db.query(
+      `UPDATE users SET wallet_balance = COALESCE(wallet_balance, 0) - $1, updated_at = $2 WHERE id = $3 AND COALESCE(wallet_balance, 0) >= $1`,
+      [total.total, now, user.id]
+    );
+    await db.query(
+      `INSERT INTO orders (id, order_number, user_id, plan_id, billing_period, price, currency, status, coupon_code, discount_amount, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'USD', 'payment_approved', $7, $8, $9, $10)`,
+      [id, orderNumber, user.id, planId, billingPeriodLabel, total.total, coupon?.code ?? null, total.coupon, now, now]
+    );
+    await db.query(
+      `INSERT INTO wallet_transactions (id, user_id, type, amount, status, order_number, note, created_at)
+       VALUES ($1, $2, 'spend', $3, 'approved', $4, 'order payment from wallet', $5)`,
+      [newId('wtx'), user.id, total.total, orderNumber, now]
+    );
+    if (coupon) {
+      await db.query('UPDATE coupons SET used_count = used_count + 1 WHERE lower(code) = lower($1)', [coupon.code]);
+    }
+    await writeAudit({ actorId: user.id, actorRole: 'customer', action: 'order_created_wallet', entityType: 'order', entityId: id, details: { planId, period: billingPeriodLabel, total: total.total }, ip });
+    return NextResponse.json({ ok: true, orderId: id, orderNumber, total: total.total, months: total.months, paidWithWallet: true }, { status: 201 });
+  }
+
   await db.query(
     `INSERT INTO orders (id, order_number, user_id, plan_id, billing_period, price, currency, status, coupon_code, discount_amount, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, 'USD', 'pending_payment', $7, $8, $9, $10)`,

@@ -1,5 +1,6 @@
 import { getDb } from '@/db/db';
 import { newId } from '@/lib/auth';
+import { processQueuedEmails } from '@/lib/mail';
 
 type QueueEmailOpts = {
   toEmail: string;
@@ -20,6 +21,12 @@ export async function queueEmail(opts: QueueEmailOpts): Promise<string> {
      VALUES ($1, $2, $3, $4, 'queued', $5, $6, $7)`,
     [id, opts.toEmail, opts.subject, stored, opts.relatedType ?? null, opts.relatedId ?? null, new Date().toISOString()]
   );
+
+  // Fire-and-forget: try to deliver immediately instead of waiting for the
+  // next cron run. Silently no-ops when SMTP/Gmail env vars are not set — the
+  // message then stays 'queued' in email_log exactly as before (audit-safe).
+  void processQueuedEmails(5).catch(() => {});
+
   return id;
 }
 

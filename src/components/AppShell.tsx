@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe, Wallet } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { AccountMenu } from '@/components/AccountMenu';
 
@@ -19,10 +19,18 @@ export function AppShell({ locale, children }: { locale: 'en' | 'ar'; children: 
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [authed, setAuthed] = useState(false);
+  const [wallet, setWallet] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me').then((r) => setAuthed(r.ok)).catch(() => setAuthed(false));
   }, [pathname]);
+
+  useEffect(() => {
+    if (!authed) { setWallet(null); return; }
+    fetch('/api/wallet').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (d && typeof d.balance === 'number') setWallet(d.balance);
+    }).catch(() => {});
+  }, [authed, pathname]);
 
   if (pathname.startsWith('/admin')) {
     // Admin has its own chrome.
@@ -54,6 +62,12 @@ export function AppShell({ locale, children }: { locale: 'en' | 'ar'; children: 
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
+            {authed && (
+              <Link href="/dashboard/wallet" className="btn btn-secondary !py-1.5 !px-3 text-xs gap-1.5" title={t('Your wallet', 'محفظتك')}>
+                <Wallet className="h-3.5 w-3.5" aria-hidden />
+                <span className="badge badge-green !py-0 text-xs whitespace-nowrap">{wallet !== null ? `$${wallet.toFixed(2)}` : '…'}</span>
+              </Link>
+            )}
             <button onClick={switchLocale} className="btn btn-secondary !py-1.5 !px-3 text-xs" aria-label="Switch language">
               <Globe className="h-3.5 w-3.5" aria-hidden /> {locale === 'en' ? 'العربية' : 'English'}
             </button>

@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, ClipboardList, ReceiptText, Boxes, Users, CalendarClock, LifeBuoy, Settings, Scale, ShieldCheck, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, ReceiptText, Wallet, Boxes, Users, CalendarClock, LifeBuoy, Settings, Scale, ShieldCheck, LogOut, Menu, X } from 'lucide-react';
 
 const NAV = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/orders', label: 'Orders', icon: ClipboardList },
   { href: '/admin/payments', label: 'Payment Queue', icon: ReceiptText },
+  { href: '/admin/wallet-deposits', label: 'Wallet Deposits', icon: Wallet },
   { href: '/admin/plans', label: 'Plans', icon: Boxes },
   { href: '/admin/customers', label: 'Customers', icon: Users },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: CalendarClock },
@@ -23,9 +24,14 @@ export function AdminShell({ user, children }: { user: { name: string; email: st
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(0);
+  const [depositPending, setDepositPending] = useState(0);
 
   useEffect(() => {
     fetch('/api/admin/overview').then((r) => r.json()).then((d) => setPending(d.stats?.pendingReview ?? 0)).catch(() => {});
+    fetch('/api/admin/wallet-deposits').then((r) => r.json()).then((d) => {
+      const pend = (d.deposits ?? []).filter((x: { status: string }) => x.status === 'pending').length;
+      setDepositPending(pend);
+    }).catch(() => {});
   }, [pathname]);
 
   async function logout() {
@@ -49,6 +55,7 @@ export function AdminShell({ user, children }: { user: { name: string; email: st
                 <n.icon className="h-4 w-4" aria-hidden />
                 <span className="flex-1">{n.label}</span>
                 {n.href === '/admin/payments' && pending > 0 && <span className="badge badge-red !px-2 !py-0 text-xs">{pending}</span>}
+                {n.href === '/admin/wallet-deposits' && depositPending > 0 && <span className="badge badge-red !px-2 !py-0 text-xs">{depositPending}</span>}
               </Link>
             ))}
           </nav>

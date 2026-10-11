@@ -136,6 +136,44 @@ export function AdminOrderDetail() {
         {msg && <p className={`text-xs badge mt-3 ${msg.ok ? 'badge-green' : 'badge-red'}`}>{msg.text}</p>}
       </div>
 
+      {/* One-step: Approve + fill delivery + send in one click (pending orders only) */}
+      {pendingSub && (
+        <div className="card p-6" style={{ borderColor: 'var(--accent)' }}>
+          <h2 className="font-bold text-lg mb-1">⚡ Approve & deliver in one step</h2>
+          <p className="text-xs text-muted mb-4">Verify the payment above, fill the VPS details here, and the customer gets everything at once — approval, active order, credentials in dashboard, and email.</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {[
+              { k: 'hostname', l: 'Hostname / IP *' },
+              { k: 'rdpPort', l: 'RDP port' },
+              { k: 'username', l: 'Username *' },
+              { k: 'password', l: 'Password (encrypted at rest)' },
+              { k: 'os', l: 'Operating system' },
+            ].map((f) => (
+              <div key={f.k}>
+                <label className="label">{f.l}</label>
+                <input className="input" dir="ltr" value={(d as Record<string, string | number>)[f.k] as string ?? ''} onChange={(e) => setD({ ...d, [f.k]: e.target.value })} placeholder={f.k === 'rdpPort' ? '3389' : ''} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-3">
+            <label className="label">Setup instructions (shown to customer)</label>
+            <textarea className="input" rows={2} value={d.setupInstructions} onChange={(e) => setD({ ...d, setupInstructions: e.target.value })} placeholder={"e.g. Open Remote Desktop → enter the IP → sign in with the username/password above."} />
+          </div>
+          <button disabled={busy || !d.hostname || !d.username}
+            onClick={() => act('approve_and_deliver', {
+              delivery: {
+                vpsHost: d.hostname, vpsPort: d.rdpPort ? Number(d.rdpPort) : undefined,
+                vpsUsername: d.username, vpsPassword: d.password || undefined,
+                vpsOs: d.os || undefined, setupNote: d.setupInstructions || undefined,
+              },
+            })}
+            className="btn btn-primary text-sm mt-4 w-full justify-center">
+            <Send className="h-4 w-4" aria-hidden />Approve payment + send VPS details
+          </button>
+          {(!d.hostname || !d.username) && <p className="text-xs text-muted mt-2">Fill at least Hostname/IP and Username.</p>}
+        </div>
+      )}
+
       {/* VPS Delivery form */}
       <div className="card p-6">
         <h2 className="font-bold text-lg mb-1">VPS delivery</h2>

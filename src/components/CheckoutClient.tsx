@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Tag, LogIn, ShieldCheck } from 'lucide-react';
+import { Loader2, Tag, LogIn, ShieldCheck, Wallet } from 'lucide-react';
 
 type Plan = {
   id: string; slug: string; name_en: string; name_ar: string; monthly_price: number; billing_periods: string;
@@ -35,6 +35,8 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [payWithWallet, setPayWithWallet] = useState(false);
 
   const chosen = visiblePeriods.find((x) => x.key === period) ?? visiblePeriods[0];
   const effectiveMonths = period === 'custom' ? customMonths : (chosen?.months ?? 1);
@@ -48,6 +50,15 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
   const base = plan.monthly_price * effectiveMonths;
   const total = base * (1 - discRate);
 
+  useEffect(() => {
+    if (!loggedIn) { setWalletBalance(null); return; }
+    fetch('/api/wallet').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (d && typeof d.balance === 'number') setWalletBalance(d.balance);
+    }).catch(() => {});
+  }, [loggedIn]);
+
+  const canPayWithWallet = walletBalance !== null && walletBalance >= total;
+
   async function submit() {
     if (!loggedIn) { setShowLoginModal(true); return; }
     setBusy(true); setNote(null);
@@ -55,11 +66,11 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: plan.id, period, months: period === 'custom' ? customMonths : null, couponCode: coupon.trim() || null }),
+        body: JSON.stringify({ planId: plan.id, period, months: period === 'custom' ? customMonths : null, couponCode: coupon.trim() || null, payFromWallet: payWithWallet }),
       });
       const data = await res.json().catch(() => ({}) as { orderNumber?: string; error?: string });
       if (res.ok && data.orderNumber) {
-        router.push(`/payment/${data.orderNumber}`);
+        router.push(data.paidWithWallet ? `/payment/${data.orderNumber}?fromWallet=1` : `/payment/${data.orderNumber}`);
         return;
       }
       const msgs: Record<string, string> = {
@@ -68,6 +79,7 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
         plan_soldout: t('This plan is sold out.', 'هذه الخطة نفدت.'),
         plan_unavailable: t('This plan is not available yet.', 'هذه الخطة غير متاحة بعد.'),
         rate_limited: t('Too many attempts — try later.', 'محاولات كثيرة — حاول لاحقاً.'),
+        insufficient_balance: t('Wallet balance is not enough — deposit first or pay with crypto.', 'رصيد المحفظة غير كافٍ — اشحنها أولاً أو ادفع بالعملة الرقمية.'),
       };
       setNote({ ok: false, text: msgs[data.error as string] ?? t('Something went wrong. Try again.', 'حدث خطأ. حاول مرة أخرى.') });
       if (data.error === 'auth_required') setShowLoginModal(true);
@@ -161,9 +173,35 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
           </div>
         )}
 
+        {loggedIn && walletBalance !== null && (
+          <div className="mt-4 rounded-xl p-4" style={{ background: canPayWithWallet ? 'rgba(52,211,153,0.08)' : 'var(--bg-2)', border: '1px solid ' + (canPayWithWallet ? 'rgba(52,211,153,0.45)' : 'var(--stroke-2)') }}>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="radio" name="payMethod" checked={!payWithWallet} onChange={() => setPayWithWallet(false)} className="mt-1" style={{ accentColor: 'var(--accent)' }} />
+              <div className="flex-1">
+                <p className="font-semibold text-sm">{t('Pay with cryptocurrency', 'الدفع بعملة رقمية')}</p>
+                <p className="text-xs text-muted mt-0.5">{t('USDT / SOL / BNB / BTC — send the exact amount and upload the receipt.', 'USDT / SOL / BNB / BTC — أرسل المبلغ بالضبط وارفع الإيصال.')}</p>
+              </div>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer mt-3">
+              <input type="radio" name="payMethod" checked={payWithWallet} onChange={() => setPayWithWallet(true)} disabled={!canPayWithWallet} className="mt-1" style={{ accentColor: 'var(--accent)' }} />
+              <div className="flex-1">
+                <p className="font-semibold text-sm flex items-center gap-2 flex-wrap">
+                  <Wallet className="h-4 w-4" aria-hidden /> {t('Pay from my wallet', 'الدفع من محفظتي')}
+                  <span className={`badge ${canPayWithWallet ? 'badge-green' : 'badge-amber'} !py-0 text-xs`}>${walletBalance!.toFixed(2)}</span>
+                </p>
+                <p className="text-xs text-muted mt-0.5">
+                  {canPayWithWallet
+                    ? t('Instant — the order is confirmed immediately, no waiting for review.', 'فوري — يؤكد الطلب مباشرة بدون انتظار المراجعة.')
+                    : t('Balance insufficient — deposit first to use this option.', 'الرصيد غير كافٍ — اشحن المحفظة أولاً لاستخدام هذا الخيار.')}
+                </p>
+              </div>
+            </label>
+          </div>
+        )}
+
         <button onClick={submit} disabled={busy || !loggedIn} className="btn btn-primary w-full justify-center mt-6">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          <span className="truncate">{t('Create order & continue to payment', 'أنشئ الطلب وتابع للدفع')}</span>
+          <span className="truncate">{payWithWallet && canPayWithWallet ? t('Pay now from wallet', 'ادفع الآن من المحفظة') : t('Create order & continue to payment', 'أنشئ الطلب وتابع للدفع')}</span>
         </button>
         {note && <p className={`text-xs badge mt-3 ${note.ok ? 'badge-green' : 'badge-red'}`}>{note.text}</p>}
       </div>
