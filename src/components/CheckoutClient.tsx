@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Tag } from 'lucide-react';
+import { Loader2, Tag, LogIn, ShieldCheck } from 'lucide-react';
 
 type Plan = {
   id: string; slug: string; name_en: string; name_ar: string; monthly_price: number; billing_periods: string;
@@ -34,6 +34,7 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
   const [coupon, setCoupon] = useState('');
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const chosen = visiblePeriods.find((x) => x.key === period) ?? visiblePeriods[0];
   const effectiveMonths = period === 'custom' ? customMonths : (chosen?.months ?? 1);
@@ -48,6 +49,7 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
   const total = base * (1 - discRate);
 
   async function submit() {
+    if (!loggedIn) { setShowLoginModal(true); return; }
     setBusy(true); setNote(null);
     try {
       const res = await fetch('/api/orders', {
@@ -68,6 +70,7 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
         rate_limited: t('Too many attempts — try later.', 'محاولات كثيرة — حاول لاحقاً.'),
       };
       setNote({ ok: false, text: msgs[data.error as string] ?? t('Something went wrong. Try again.', 'حدث خطأ. حاول مرة أخرى.') });
+      if (data.error === 'auth_required') setShowLoginModal(true);
     } catch {
       setNote({ ok: false, text: t('Network error. Try again.', 'خطأ في الشبكة. حاول مرة أخرى.') });
     } finally {
@@ -165,7 +168,6 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
         {note && <p className={`text-xs badge mt-3 ${note.ok ? 'badge-green' : 'badge-red'}`}>{note.text}</p>}
       </div>
 
-      {/* What happens next */}
       <div className="card p-6 md:p-7 h-fit">
         <h2 className="font-bold text-lg mb-5">{t('What happens next', 'ما يحدث بعد ذلك')}</h2>
         <ol className="space-y-4 text-sm list-none">
@@ -188,6 +190,31 @@ export function CheckoutClient({ plan, locale, loggedIn }: { plan: Plan; locale:
               'تُراجع المدفوعات بواسطة شخص. رفع لقطة الشاشة لا يعني تلقائياً اعتبار الطلب مدفوعاً.')}
         </div>
       </div>
+
+      {/* Guest login-required modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(4,8,16,0.72)' }} role="dialog" aria-modal="true">
+          <div className="card p-7 max-w-sm w-full text-center" style={{ boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}>
+            <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'var(--accent-soft)' }}>
+              <LogIn className="h-7 w-7 text-[var(--accent-2)]" aria-hidden />
+            </div>
+            <h3 className="font-bold text-lg mb-2">{t('Log in to complete your order', 'سجّل دخولك لإكمال طلبك')}</h3>
+            <p className="text-muted text-sm mb-5">
+              {t('Your plan selection is saved. Create an account or log in — it takes less than a minute.',
+                 'اختيار خطتك محفوظ. أنشئ حساباً أو سجّل دخولك — يستغرق أقل من دقيقة.')}
+            </p>
+            <div className="space-y-2">
+              <a href={`/login?next=/checkout/${plan.slug}`} className="btn btn-primary w-full justify-center">{t('Log in', 'تسجيل الدخول')}</a>
+              <a href={`/register?next=/checkout/${plan.slug}`} className="btn btn-secondary w-full justify-center">
+                <ShieldCheck className="h-4 w-4" aria-hidden /> {t('Create account', 'إنشاء حساب')}
+              </a>
+              <button onClick={() => setShowLoginModal(false)} className="text-xs text-muted hover:underline pt-1">
+                {t('Keep browsing', 'متابعة التصفح')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

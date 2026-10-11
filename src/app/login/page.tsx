@@ -10,6 +10,17 @@ export default function LoginPage() {
   const search = useSearchParams();
   const next = search.get('next') || '';
 
+  // Read locale from cookie (same mechanism AppShell writes) — no flicker, no server roundtrip.
+  const [locale] = useState<'en' | 'ar'>(() => {
+    if (typeof document !== 'undefined') {
+      const m = document.cookie.match(/(?:^|;\s*)locale=(en|ar)/);
+      if (m) return m[1] as 'en' | 'ar';
+    }
+    return 'ar';
+  });
+  const ar = locale === 'ar';
+  const t = (enS: string, arS: string) => (ar ? arS : enS);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
@@ -34,39 +45,39 @@ export default function LoginPage() {
         return;
       }
       const map: Record<string, string> = {
-        invalid_credentials: 'Email or password is incorrect.',
-        account_suspended: 'Your account is suspended. Contact support.',
-        rate_limited: 'Too many attempts — wait a few minutes.',
-        invalid_input: 'Check your email and password.',
+        invalid_credentials: t('Email or password is incorrect.', 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'),
+        account_suspended: t('Your account is suspended. Contact support.', 'حسابك موقوف — تواصل مع الدعم.'),
+        rate_limited: t('Too many attempts — wait a few minutes.', 'محاولات كثيرة — انتظر بضع دقائق.'),
+        invalid_input: t('Check your email and password.', 'تحقق من بريدك وكلمة المرور.'),
       };
-      setErr(map[d.error as string] ?? 'Login failed. Try again.');
+      setErr(map[d.error as string] ?? t('Login failed. Try again.', 'فشل تسجيل الدخول. حاول مجدداً.'));
     } catch {
-      setErr('Network error. Try again.');
+      setErr(t('Network error. Try again.', 'خطأ في الشبكة. حاول مجدداً.'));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="container-app py-16 max-w-md mx-auto">
+    <div className="container-app py-16 max-w-md mx-auto" dir={ar ? 'rtl' : 'ltr'}>
       <div className="text-center mb-8">
         <div className="w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'var(--accent-soft)' }}>
           <Server className="h-6 w-6 text-[var(--accent-2)]" aria-hidden />
         </div>
-        <h1 className="text-2xl font-bold">Welcome back</h1>
-        <p className="text-sm text-muted mt-1">Log in to manage your orders and VPS.</p>
+        <h1 className="text-2xl font-bold">{t('Welcome back', 'أهلاً بعودتك')}</h1>
+        <p className="text-sm text-muted mt-1">{t('Log in to manage your orders and VPS.', 'سجّل دخولك لإدارة طلباتك وخوادمك.')}</p>
       </div>
 
       <form onSubmit={submit} className="card p-6 space-y-4">
         <div>
-          <label className="label" htmlFor="email">Email</label>
-          <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" placeholder="you@example.com" />
+          <label className="label" htmlFor="email">{t('Email', 'البريد الإلكتروني')}</label>
+          <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" placeholder="you@example.com" dir="ltr" />
         </div>
         <div>
-          <label className="label" htmlFor="password">Password</label>
+          <label className="label" htmlFor="password">{t('Password', 'كلمة المرور')}</label>
           <div className="relative">
-            <input id="password" type={show ? 'text' : 'password'} className="input pe-10" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder="Your password" />
-            <button type="button" onClick={() => setShow(!show)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted" aria-label={show ? 'Hide password' : 'Show password'}>
+            <input id="password" type={show ? 'text' : 'password'} className="input pe-10" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder={t('Your password', 'كلمة مرورك')} dir="ltr" />
+            <button type="button" onClick={() => setShow(!show)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted" aria-label={show ? t('Hide password', 'إخفاء كلمة المرور') : t('Show password', 'إظهار كلمة المرور')}>
               {show ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
             </button>
           </div>
@@ -78,12 +89,15 @@ export default function LoginPage() {
 
         <button disabled={busy} className="btn btn-primary w-full justify-center">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          Log in
+          {t('Log in', 'تسجيل الدخول')}
         </button>
 
-        <div className="flex items-center justify-between text-xs pt-2">
-          <Link href="/forgot-password" className="text-[var(--accent-2)] hover:underline">Forgot password?</Link>
-          <span className="text-muted">No account? <Link href="/register" className="text-[var(--accent-2)] hover:underline">Create one</Link></span>
+        <div className="flex items-center justify-between text-xs pt-2 flex-wrap gap-2">
+          <Link href="/forgot-password" className="text-[var(--accent-2)] hover:underline">{t('Forgot password?', 'نسيت كلمة المرور؟')}</Link>
+          <span className="text-muted">
+            {t('No account?', 'ليس لديك حساب؟')}{' '}
+            <Link href={next ? `/register?next=${encodeURIComponent(next)}` : '/register'} className="text-[var(--accent-2)] hover:underline">{t('Create one', 'أنشئ حساباً')}</Link>
+          </span>
         </div>
       </form>
     </div>
